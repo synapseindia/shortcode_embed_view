@@ -1,0 +1,144 @@
+<?php
+/*
+ * FIXME: Need implement dynamic embedding: make embedding when the content shows
+ */
+/**
+ * Implements hook_shortcode_info()
+ *
+ * @return array - The shortcode definition array
+ *
+ */
+function shortcode_embed_view_shortcode_info() {
+  $shortcodes['embed_view'] = array(
+    'title' => t('Embed view content'),
+    'description' => t('Embed view content into the text.'),
+    'process callback' => 'shortcode_embed_view_shortcode_node',
+    //'settings callback' => '_shortcode_settings_form', TODO
+    'tips callback' => 'shortcode_embed_view_node_tip',
+    'attributes callback' => 'shortcode_embed_view_attributes',
+    'default settings' => array(),
+  );
+
+  return $shortcodes;
+}
+
+/**
+ * Attributes form element for embed_view shortcode.
+ *
+ * Used by shortcode_wysiwyg module to add form elements for attributes.
+ */
+function shortcode_embed_view_attributes($form, &$form_state) {
+  $form['embed_view-view'] = array(
+    '#title' => t('View '),
+    '#type' => 'textfield',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="shortcode"]' => array('value' => 'embed_view'),
+      ),
+    ),
+  );
+  $form['embed_view-class'] = array(
+    '#title' => t('Class'),
+    '#type' => 'textfield',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="shortcode"]' => array('value' => 'embed_view'),
+      ),
+    ),
+  );
+  $form['embed_view-view_mode'] = array(
+    '#title' => t('View mode'),
+    '#type' => 'textfield',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="shortcode"]' => array('value' => 'embed_view'),
+      ),
+    ),
+  );
+  $form['embed_view-show_title'] = array(
+    '#title' => t('Show title'),
+    '#type' => 'select',
+    '#options' => array('true' => 'True', 'false' => 'False'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="shortcode"]' => array('value' => 'embed_view'),
+      ),
+    ),
+  );
+
+  return $form;
+}
+
+/**
+ * Embed a view content into the text
+ *
+ * Calling
+ * [embed_view view=X /]
+ * X : unique machine name of view
+ * Other shortcode parameters
+ *
+ * class - additional class to the node
+ *
+ * If no nid given the result will be empty
+ *
+ * TODO: implement view_mode - other than teaser or full!
+ */
+
+function shortcode_embed_view_shortcode_node($attrs, $text) {
+
+  $attrs = shortcode_attrs( array(
+      'view'    => 0,
+      'class'  => '',
+      'show_title' => FALSE,
+      ),
+    $attrs
+  );
+
+
+  if (!empty($attrs['view'])) {
+	//$view = views_get_view($attrs['view']);
+	$view = views_embed_view($attrs['view'])   ;
+	
+    // add embedded flag to the node
+    if (empty($view)) {
+      return '';
+    }
+    //$node->shortcode_embedded = TRUE;
+  }
+  else {
+    return '';
+  }
+
+  $js = drupal_get_js();
+  $css = drupal_get_css();
+  $view = $css.$view.$js;
+
+  return render($view);
+} // shortcode_embed_view_shortcode_node()
+
+
+function shortcode_embed_view_node_tip($format, $long) {
+  $output = '';
+  $output = '<p><strong>[embed_view view=x (class="additional class")][/embed_view]</strong> ';
+  if ($long) {
+    $output .= 'Embed a View(block) by block unique name into the text. Additional class names can be added by the <em>class</em> parameter.</p>';
+  }
+  else {
+    $output .= 'Embed a View(block) by block unique name into the text. Additional class names can be added by the <em>class</em> parameter.</p>';
+  }
+
+  return $output;
+} // shortcode_embed_view_node_tip()
+
+
+/**
+ * Implementation of hook_preprocess_node()
+ * TODO: implement dynamic embedding!
+ */
+function shortcode_embed_view_preprocess_node(&$vars) {
+  if (isset($vars['shortcode']) && $vars['shortcode']->embedded) {
+    $vars['template_files'][] = "node-shortcode--default";
+    $vars['template_files'][] = 'node-shortcode--' . $vars['type'];
+  }
+}
+
